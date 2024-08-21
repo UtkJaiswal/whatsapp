@@ -25,6 +25,8 @@ def webhook():
     print("request message",request.values.get('Body',''))
     incoming_msg = request.values.get('Body', '').lower()
 
+    sender = request.values.get('From', '')
+
     response_from_gemini = send_to_gemini_api(incoming_msg)
 
     twilio_response = MessagingResponse()
@@ -34,7 +36,7 @@ def webhook():
     msg.body(response_from_gemini)
 
         
-    message_id = send_message("whatsapp:+916290750803",response_from_gemini)
+    message_id = send_message(sender,response_from_gemini)
 
     
 
