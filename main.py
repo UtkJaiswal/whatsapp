@@ -51,10 +51,11 @@ def send_message(to, body):
 
 def send_to_gemini_api(prompt):
     
-    prompt= "React"
-    response = model.generate_content(prompt)
+    modified_prompt = f"Provide a detailed explanation about {prompt} in 1200 characters or less."
+
+    response = model.generate_content(modified_prompt)
     response_text = response.text
-    print("response is",response_text)
+    print("Response from Gemini API:", response_text)
     return response_text
 
 
