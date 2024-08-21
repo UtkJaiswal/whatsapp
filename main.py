@@ -3,6 +3,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 from twilio.rest import Client
 import os
 import requests
+import google.generativeai as genai
 
 
 app = Flask(__name__)
@@ -11,6 +12,10 @@ app = Flask(__name__)
 account_sid = os.getenv('ACCOUNT_SID')
 auth_token = os.getenv('AUTH_TOKEN')
 gemini_api_key = os.getenv('GEMINI_API_KEY')
+
+genai.configure(api_key=gemini_api_key)
+model = genai.GenerativeModel('gemini-1.5-flash')
+
 
 client = Client(account_sid, auth_token)
 
@@ -45,26 +50,11 @@ def send_message(to, body):
 
 
 def send_to_gemini_api(prompt):
-    url = "https://api.anthropic.com/v1/chat"
-    headers = {
-        "Content-Type": "application/json",
-        "x-api-key": gemini_api_key
-    }
-    data = {
-        "prompt": prompt,
-        "max_tokens": 1024,
-        "temperature": 0.7,
-        "top_p": 0.9,
-        "n": 1,
-        "stream": False,
-        "stop": None,
-        "presence_penalty": 0,
-        "frequency_penalty": 0,
-        "model": "gpt-3.5-flash"
-    }
-
-    response = requests.post(url, headers=headers, json=data)
-    response_text = response.json()["choices"][0]["message"]["content"]
+    
+    prompt= "React"
+    response = model.generate_content(prompt)
+    response_text = response.text
+    print("response is",response_text)
     return response_text
 
 
