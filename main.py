@@ -2,12 +2,15 @@ from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
 from twilio.rest import Client
 import os
+import requests
+
 
 app = Flask(__name__)
 
 
 account_sid = os.getenv('ACCOUNT_SID')
 auth_token = os.getenv('AUTH_TOKEN')
+gemini_api_key = os.getenv('GEMINI_API_KEY')
 
 client = Client(account_sid, auth_token)
 
@@ -16,22 +19,21 @@ client = Client(account_sid, auth_token)
 def webhook():
     print("request message",request.values.get('Body',''))
     incoming_msg = request.values.get('Body', '').lower()
-    response = MessagingResponse()
-    msg = response.message()
+
+    response_from_gemini = send_to_gemini_api(incoming_msg)
+
+    twilio_response = MessagingResponse()
+
+    msg = twilio_response.message()
+
+    msg.body(response_from_gemini)
+
+        
+    message_id = send_message("whatsapp:+916290750803",response_from_gemini)
 
     
-    if 'hello' in incoming_msg:
-        msg.body('Hello! How can I help you today?')
-    elif 'bye' in incoming_msg:
-        msg.body('Goodbye! Have a great day!')
-    else:
-        msg.body('I am sorry, I didnt understand that. Can you please rephrase?')
 
-    message_id = send_message("whatsapp:+916290750803","Hello")
-
-    print("message id",message_id)
-
-    return str(response)
+    return str(twilio_response)
 
 def send_message(to, body):
     message = client.messages.create(
@@ -40,6 +42,30 @@ def send_message(to, body):
     to=to
     )
     return message.sid
+
+
+def send_to_gemini_api(prompt):
+    url = "https://api.anthropic.com/v1/chat"
+    headers = {
+        "Content-Type": "application/json",
+        "x-api-key": gemini_api_key
+    }
+    data = {
+        "prompt": prompt,
+        "max_tokens": 1024,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "n": 1,
+        "stream": False,
+        "stop": None,
+        "presence_penalty": 0,
+        "frequency_penalty": 0,
+        "model": "gpt-3.5-flash"
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+    response_text = response.json()["choices"][0]["message"]["content"]
+    return response_text
 
 
 if __name__ == '__main__':
